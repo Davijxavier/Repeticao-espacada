@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>Estudos · Repetição Espaçada</title>
+<meta name="theme-color" content="#0f172a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Estudos">
+<meta name="mobile-web-app-capable" content="yes">
+<style>
+  :root{
+    --bg:#f4f5f7; --surface:#ffffff; --surface-2:#eef0f3; --text:#14161a; --text-dim:#6b7078;
+    --border:#e3e5e9; --accent:#3b6df0; --accent-text:#ffffff; --danger:#e0483f; --ok:#1f9e5c;
+    --warn:#d98a1c; --shadow:0 10px 30px rgba(20,22,26,.12);
+    --safe-t:env(safe-area-inset-top); --safe-b:env(safe-area-inset-bottom);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0f1115; --surface:#1a1d23; --surface-2:#22262e; --text:#eef0f3; --text-dim:#9aa0ab;
+      --border:#2b2f38; --accent:#5b86ff; --accent-text:#0f1115; --danger:#ff6b61; --ok:#38c07d;
+      --warn:#e6a83f; --shadow:0 10px 30px rgba(0,0,0,.45);
+    }
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    overscroll-behavior:none;
+  }
+  input,textarea,button{font-family:inherit;}
+
+  /* #app clips instead of hides overflow: overflow:hidden still lets a focused
+     input inside an off-screen sheet trigger the browser's scroll-into-view,
+     which drags the whole app (header included) up. overflow:clip blocks
+     that programmatic scroll too, not just user-driven scrolling. */
+  #app{ position:relative; height:100dvh; overflow:clip; display:flex; flex-direction:column; }
+
+  header{
+    padding:calc(14px + var(--safe-t)) 18px 12px; display:flex; align-items:center;
+    justify-content:space-between; border-bottom:1px solid var(--border); background:var(--surface);
+    flex:0 0 auto;
+  }
+  header h1{ font-size:19px; margin:0; font-weight:700; }
+  header .icon-btn{ background:none; border:none; color:var(--text-dim); padding:6px; border-radius:10px; }
+  header .icon-btn:active{ background:var(--surface-2); }
+
+  main{ flex:1 1 auto; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:14px 16px 100px; }
+
+  .tabs{ display:flex; gap:6px; background:var(--surface-2); border-radius:12px; padding:4px; margin-bottom:16px; }
+  .tabs button{
+    flex:1; border:none; background:transparent; padding:9px 6px; border-radius:9px; color:var(--text-dim);
+    font-size:14px; font-weight:600;
+  }
+  .tabs button.active{ background:var(--surface); color:var(--text); box-shadow:var(--shadow); }
+
+  .section-title{ font-size:13px; font-weight:700; color:var(--text-dim); text-transform:uppercase;
+    letter-spacing:.04em; margin:18px 2px 8px; }
+  .section-title:first-child{ margin-top:0; }
+
+  .card{
+    background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:14px;
+    margin-bottom:10px;
+  }
+  .empty{ text-align:center; color:var(--text-dim); font-size:14px; padding:36px 10px; }
+
+  .review-item{ display:flex; align-items:center; gap:12px; }
+  .review-item .info{ flex:1; min-width:0; }
+  .review-item .tema{ font-weight:700; font-size:15px; margin:0 0 3px; }
+  .review-item .meta{ font-size:12.5px; color:var(--text-dim); display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+  .badge{ font-size:11px; font-weight:700; padding:2px 7px; border-radius:99px; background:var(--surface-2); color:var(--text-dim); }
+  .badge.late{ background:rgba(224,72,63,.15); color:var(--danger); }
+  .badge.today{ background:rgba(31,158,92,.15); color:var(--ok); }
+  .done-btn{
+    border:none; background:var(--accent); color:var(--accent-text); font-weight:700; font-size:13px;
+    padding:8px 14px; border-radius:10px; flex:0 0 auto;
+  }
+  .done-btn:active{ opacity:.8; }
+
+  .hist-item{ display:flex; align-items:center; gap:10px; cursor:pointer; }
+  .hist-item .info{ flex:1; min-width:0; }
+  .hist-item .tema{ font-weight:700; font-size:15px; margin:0 0 3px; }
+  .hist-item .meta{ font-size:12.5px; color:var(--text-dim); }
+  .progress-wrap{ flex:0 0 auto; text-align:right; }
+  .progress-num{ font-size:13px; font-weight:700; color:var(--text-dim); }
+  .chevron{ color:var(--text-dim); flex:0 0 auto; }
+
+  .stat-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .stat-card{ background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px; }
+  .stat-card .num{ font-size:26px; font-weight:800; margin:0 0 2px; }
+  .stat-card .label{ font-size:12.5px; color:var(--text-dim); }
+
+  .fab{
+    position:absolute; right:18px; bottom:calc(22px + var(--safe-b));
+    width:56px; height:56px; border-radius:50%; background:var(--accent); color:var(--accent-text);
+    border:none; font-size:28px; line-height:1; box-shadow:var(--shadow); z-index:5;
+  }
+  .fab:active{ transform:scale(.94); }
+
+  /* Overlay + sheet: visibility:hidden (with a transition-delay only on close)
+     keeps a closed sheet truly unreachable/unfocusable, on top of the
+     off-screen transform, regardless of rendering quirks. */
+  .overlay{
+    position:absolute; inset:0; background:rgba(0,0,0,.45); opacity:0; visibility:hidden;
+    transition:opacity .25s ease, visibility 0s linear .25s; z-index:10;
+  }
+  .overlay.open{ opacity:1; visibility:visible; transition:opacity .25s ease, visibility 0s linear 0s; }
+
+  .sheet{
+    position:absolute; left:0; right:0; bottom:0; max-height:88%; background:var(--surface);
+    border-radius:20px 20px 0 0; box-shadow:var(--shadow); z-index:11; display:flex; flex-direction:column;
+    transform:translateY(102%); visibility:hidden;
+    transition:transform .3s cubic-bezier(.32,.72,0,1), visibility 0s linear .3s;
+    padding-bottom:var(--safe-b);
+  }
+  .sheet.open{ transform:translateY(0); visibility:visible; transition:transform .3s cubic-bezier(.32,.72,0,1), visibility 0s linear 0s; }
+
+  .sheet .handle{ width:36px; height:4px; background:var(--border); border-radius:99px; margin:10px auto 4px; flex:0 0 auto; }
+  .sheet-head{ display:flex; align-items:center; justify-content:space-between; padding:8px 16px 4px; flex:0 0 auto; }
+  .sheet-head h2{ font-size:17px; margin:0; }
+  .sheet-head button{ background:none; border:none; color:var(--accent); font-size:15px; font-weight:600; padding:6px; }
+  .sheet-body{ overflow-y:auto; padding:6px 18px 20px; -webkit-overflow-scrolling:touch; }
+
+  label{ display:block; font-size:12.5px; font-weight:700; color:var(--text-dim); margin:14px 0 6px; }
+  label:first-child{ margin-top:4px; }
+  input[type=text], input[type=date], textarea{
+    width:100%; background:var(--surface-2); border:1px solid var(--border); border-radius:12px;
+    padding:11px 12px; font-size:16px; color:var(--text);
+  }
+  textarea{ min-height:80px; resize:vertical; }
+  input:focus, textarea:focus{ outline:2px solid var(--accent); outline-offset:1px; }
+
+  .primary-btn{
+    width:100%; border:none; background:var(--accent); color:var(--accent-text); font-weight:700;
+    font-size:16px; padding:14px; border-radius:12px; margin-top:20px;
+  }
+  .primary-btn:active{ opacity:.85; }
+  .danger-btn{
+    width:100%; border:none; background:transparent; color:var(--danger); font-weight:700;
+    font-size:15px; padding:12px; border-radius:12px; margin-top:10px;
+  }
+  .danger-btn:active{ background:rgba(224,72,63,.1); }
+
+  .revisoes-list{ margin-top:16px; display:flex; flex-direction:column; gap:8px; }
+  .rev-row{
+    display:flex; align-items:center; gap:10px; background:var(--surface-2); border-radius:12px; padding:10px 12px;
+  }
+  .rev-row .chk{
+    width:24px; height:24px; border-radius:50%; border:2px solid var(--border); flex:0 0 auto;
+    display:flex; align-items:center; justify-content:center; color:var(--accent-text); font-size:14px; font-weight:800;
+  }
+  .rev-row.done .chk{ background:var(--ok); border-color:var(--ok); }
+  .rev-row .rinfo{ flex:1; font-size:14px; }
+  .rev-row .rinfo b{ display:block; font-size:13.5px; }
+  .rev-row .rinfo span{ color:var(--text-dim); font-size:12px; }
+
+  .toast{
+    position:absolute; left:50%; bottom:calc(24px + var(--safe-b)); transform:translate(-50%,20px);
+    background:var(--text); color:var(--bg); padding:10px 18px; border-radius:99px; font-size:13.5px;
+    font-weight:600; opacity:0; visibility:hidden; transition:opacity .2s ease, transform .2s ease, visibility 0s linear .2s;
+    z-index:20; white-space:nowrap;
+  }
+  .toast.show{ opacity:1; visibility:visible; transform:translate(-50%,0); transition:opacity .2s ease, transform .2s ease, visibility 0s linear 0s; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>Estudos</h1>
+    <button class="icon-btn" id="btnStats" aria-label="Estatísticas">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M12 20V4M20 20v-7"/></svg>
+    </button>
+  </header>
+
+  <main>
+    <div class="tabs">
+      <button id="tabHoje" class="active">Hoje</button>
+      <button id="tabHistorico">Histórico</button>
+    </div>
+    <div id="viewHoje"></div>
+    <div id="viewHistorico" style="display:none"></div>
+  </main>
+
+  <button class="fab" id="btnNovo" aria-label="Novo registro">+</button>
+
+  <div class="overlay" id="overlayNovo"></div>
+  <div class="sheet" id="sheetNovo" role="dialog" aria-label="Novo registro de estudo">
+    <div class="handle"></div>
+    <div class="sheet-head">
+      <button id="cancelNovo">Cancelar</button>
+      <h2>Novo estudo</h2>
+      <button id="saveNovo" style="font-weight:800">Salvar</button>
+    </div>
+    <div class="sheet-body">
+      <label for="novoTema">Tema</label>
+      <input type="text" id="novoTema" placeholder="Ex: Verbos irregulares em inglês">
+      <label for="novoObs">Observações</label>
+      <textarea id="novoObs" placeholder="Notas, dificuldades, links..."></textarea>
+      <label for="novoData">Data do estudo</label>
+      <input type="date" id="novoData">
+    </div>
+  </div>
+
+  <div class="overlay" id="overlayEditar"></div>
+  <div class="sheet" id="sheetEditar" role="dialog" aria-label="Editar registro de estudo">
+    <div class="handle"></div>
+    <div class="sheet-head">
+      <button id="closeEditar">Fechar</button>
+      <h2>Editar</h2>
+      <button id="saveEditar" style="font-weight:800">Salvar</button>
+    </div>
+    <div class="sheet-body">
+      <label for="editTema">Tema</label>
+      <input type="text" id="editTema">
+      <label for="editObs">Observações</label>
+      <textarea id="editObs"></textarea>
+      <label for="editData">Data do estudo</label>
+      <input type="date" id="editData">
+      <div class="section-title">Revisões</div>
+      <div class="revisoes-list" id="editRevisoes"></div>
+      <button class="danger-btn" id="deleteEntrada">Excluir este registro</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlayStats"></div>
+  <div class="sheet" id="sheetStats" role="dialog" aria-label="Estatísticas">
+    <div class="handle"></div>
+    <div class="sheet-head">
+      <span></span>
+      <h2>Estatísticas</h2>
+      <button id="closeStats">Fechar</button>
+    </div>
+    <div class="sheet-body" id="statsBody"></div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var STORAGE_KEY = "estudosRepeticaoEspacada.v1";
+  var DIAS_REVISAO = [7, 14, 30, 90];
+  var state = { nextId: 1, entradas: [] };
+
+  function loadState(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return;
+      var parsed = JSON.parse(raw);
+      if(parsed && Array.isArray(parsed.entradas) && typeof parsed.nextId === "number"){
+        state = parsed;
+      }
+    }catch(e){ /* dados corrompidos: mantém estado padrão */ }
+  }
+
+  function saveState(){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  function pad2(n){ return n < 10 ? "0" + n : "" + n; }
+
+  function todayStr(){
+    var d = new Date();
+    return d.getFullYear() + "-" + pad2(d.getMonth()+1) + "-" + pad2(d.getDate());
+  }
+
+  function parseDate(str){
+    var p = str.split("-");
+    return new Date(parseInt(p[0],10), parseInt(p[1],10)-1, parseInt(p[2],10));
+  }
+
+  function addDays(dateStr, days){
+    var d = parseDate(dateStr);
+    d.setDate(d.getDate() + days);
+    return d.getFullYear() + "-" + pad2(d.getMonth()+1) + "-" + pad2(d.getDate());
+  }
+
+  function formatDateBR(dateStr){
+    var p = dateStr.split("-");
+    return p[2] + "/" + p[1] + "/" + p[0];
+  }
+
+  function diffDays(fromStr, toStr){
+    var ms = parseDate(toStr).getTime() - parseDate(fromStr).getTime();
+    return Math.round(ms / 86400000);
+  }
+
+  function criarRevisoes(dataEstudo){
+    return DIAS_REVISAO.map(function(dias){
+      return { dias: dias, data: addDays(dataEstudo, dias), concluida: false, concluidaEm: null };
+    });
+  }
+
+  function criarEntrada(tema, observacoes, dataEstudo){
+    var entrada = {
+      id: state.nextId++,
+      tema: tema,
+      observacoes: observacoes,
+      dataEstudo: dataEstudo,
+      revisoes: criarRevisoes(dataEstudo)
+    };
+    state.entradas.push(entrada);
+    saveState();
+    return entrada;
+  }
+
+  function recalcularRevisoes(entrada){
+    entrada.revisoes = entrada.revisoes.map(function(r){
+      return { dias: r.dias, data: addDays(entrada.dataEstudo, r.dias), concluida: r.concluida, concluidaEm: r.concluidaEm };
+    });
+  }
+
+  function marcarConcluida(entradaId, dias, concluida){
+    var entrada = state.entradas.find(function(e){ return e.id === entradaId; });
+    if(!entrada) return;
+    var rev = entrada.revisoes.find(function(r){ return r.dias === dias; });
+    if(!rev) return;
+    rev.concluida = concluida;
+    rev.concluidaEm = concluida ? todayStr() : null;
+    saveState();
+  }
+
+  function excluirEntrada(id){
+    state.entradas = state.entradas.filter(function(e){ return e.id !== id; });
+    saveState();
+  }
+
+  function getRevisoesHoje(){
+    var hoje = todayStr();
+    var lista = [];
+    state.entradas.forEach(function(entrada){
+      entrada.revisoes.forEach(function(rev){
+        if(!rev.concluida && rev.data <= hoje){
+          lista.push({ entrada: entrada, rev: rev });
+        }
+      });
+    });
+    lista.sort(function(a,b){ return a.rev.data < b.rev.data ? -1 : a.rev.data > b.rev.data ? 1 : a.rev.dias - b.rev.dias; });
+    return lista;
+  }
+
+  function getStats(){
+    var totalTemas = state.entradas.length;
+    var totalRevisoes = 0, concluidas = 0, atrasadas = 0;
+    var hoje = todayStr();
+    state.entradas.forEach(function(entrada){
+      entrada.revisoes.forEach(function(rev){
+        totalRevisoes++;
+        if(rev.concluida) concluidas++;
+        else if(rev.data < hoje) atrasadas++;
+      });
+    });
+    return { totalTemas: totalTemas, totalRevisoes: totalRevisoes, concluidas: concluidas, atrasadas: atrasadas };
+  }
+
+  // ---------- DOM ----------
+  var $ = function(id){ return document.getElementById(id); };
+  var viewHoje = $("viewHoje"), viewHistorico = $("viewHistorico");
+  var tabHoje = $("tabHoje"), tabHistorico = $("tabHistorico");
+
+  function escapeHTML(str){
+    return String(str).replace(/[&<>"']/g, function(c){
+      return ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c];
+    });
+  }
+
+  function renderHoje(){
+    var lista = getRevisoesHoje();
+    if(lista.length === 0){
+      viewHoje.innerHTML = '<div class="empty">Nenhuma revisão pendente para hoje. 🎉</div>';
+      return;
+    }
+    var hoje = todayStr();
+    var html = '<div class="section-title">Revisar agora</div>';
+    lista.forEach(function(item){
+      var atrasada = item.rev.data < hoje;
+      var badgeClass = atrasada ? "late" : "today";
+      var badgeText = atrasada ? (diffDays(item.rev.data, hoje) + "d atrasada") : "hoje";
+      html += '<div class="card review-item" data-id="'+item.entrada.id+'" data-dias="'+item.rev.dias+'">' +
+        '<div class="info">' +
+          '<p class="tema">'+escapeHTML(item.entrada.tema)+'</p>' +
+          '<div class="meta"><span class="badge">'+item.rev.dias+' dias</span><span class="badge '+badgeClass+'">'+badgeText+'</span></div>' +
+        '</div>' +
+        '<button class="done-btn" data-action="concluir">Concluir</button>' +
+      '</div>';
+    });
+    viewHoje.innerHTML = html;
+  }
+
+  function renderHistorico(){
+    if(state.entradas.length === 0){
+      viewHistorico.innerHTML = '<div class="empty">Nenhum estudo registrado ainda.</div>';
+      return;
+    }
+    var ordenadas = state.entradas.slice().sort(function(a,b){
+      return a.dataEstudo < b.dataEstudo ? 1 : a.dataEstudo > b.dataEstudo ? -1 : b.id - a.id;
+    });
+    var html = '';
+    ordenadas.forEach(function(entrada){
+      var concluidas = entrada.revisoes.filter(function(r){ return r.concluida; }).length;
+      html += '<div class="card hist-item" data-id="'+entrada.id+'">' +
+        '<div class="info">' +
+          '<p class="tema">'+escapeHTML(entrada.tema)+'</p>' +
+          '<div class="meta">Estudado em '+formatDateBR(entrada.dataEstudo)+'</div>' +
+        '</div>' +
+        '<div class="progress-wrap"><div class="progress-num">'+concluidas+'/'+entrada.revisoes.length+'</div></div>' +
+        '<svg class="chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>' +
+      '</div>';
+    });
+    viewHistorico.innerHTML = html;
+  }
+
+  function renderStats(){
+    var s = getStats();
+    $("statsBody").innerHTML =
+      '<div class="stat-grid">' +
+        '<div class="stat-card"><p class="num">'+s.totalTemas+'</p><p class="label">Temas estudados</p></div>' +
+        '<div class="stat-card"><p class="num">'+s.concluidas+'/'+s.totalRevisoes+'</p><p class="label">Revisões concluídas</p></div>' +
+        '<div class="stat-card"><p class="num">'+s.atrasadas+'</p><p class="label">Revisões atrasadas</p></div>' +
+        '<div class="stat-card"><p class="num">'+(s.totalRevisoes ? Math.round(s.concluidas/s.totalRevisoes*100) : 0)+'%</p><p class="label">Taxa de conclusão</p></div>' +
+      '</div>';
+  }
+
+  function renderAll(){
+    renderHoje();
+    renderHistorico();
+    renderStats();
+  }
+
+  // ---------- Tabs ----------
+  function switchTab(name){
+    var isHoje = name === "hoje";
+    tabHoje.classList.toggle("active", isHoje);
+    tabHistorico.classList.toggle("active", !isHoje);
+    viewHoje.style.display = isHoje ? "" : "none";
+    viewHistorico.style.display = isHoje ? "none" : "";
+  }
+  tabHoje.addEventListener("click", function(){ switchTab("hoje"); });
+  tabHistorico.addEventListener("click", function(){ switchTab("historico"); });
+
+  // ---------- Sheets ----------
+  function openSheet(name){
+    $("overlay"+name).classList.add("open");
+    $("sheet"+name).classList.add("open");
+  }
+  function closeSheet(name){
+    $("overlay"+name).classList.remove("open");
+    $("sheet"+name).classList.remove("open");
+  }
+  ["Novo","Editar","Stats"].forEach(function(name){
+    $("overlay"+name).addEventListener("click", function(){ closeSheet(name); });
+  });
+
+  // ---------- Toast ----------
+  var toastTimer = null;
+  function showToast(msg){
+    var t = $("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ t.classList.remove("show"); }, 1800);
+  }
+
+  // ---------- Novo estudo ----------
+  $("btnNovo").addEventListener("click", function(){
+    $("novoTema").value = "";
+    $("novoObs").value = "";
+    $("novoData").value = todayStr();
+    openSheet("Novo");
+    setTimeout(function(){ $("novoTema").focus(); }, 300);
+  });
+  $("cancelNovo").addEventListener("click", function(){ closeSheet("Novo"); });
+  $("saveNovo").addEventListener("click", function(){
+    var tema = $("novoTema").value.trim();
+    var obs = $("novoObs").value.trim();
+    var data = $("novoData").value || todayStr();
+    if(!tema){
+      $("novoTema").focus();
+      return;
+    }
+    criarEntrada(tema, obs, data);
+    closeSheet("Novo");
+    renderAll();
+    showToast("Estudo registrado");
+  });
+
+  // ---------- Concluir revisão (lista "Hoje") ----------
+  viewHoje.addEventListener("click", function(ev){
+    var btn = ev.target.closest('[data-action="concluir"]');
+    if(!btn) return;
+    var card = ev.target.closest(".review-item");
+    var id = parseInt(card.getAttribute("data-id"), 10);
+    var dias = parseInt(card.getAttribute("data-dias"), 10);
+    marcarConcluida(id, dias, true);
+    renderAll();
+    showToast("Revisão concluída");
+  });
+
+  // ---------- Editar / detalhe ----------
+  var editandoId = null;
+
+  function abrirEditar(id){
+    var entrada = state.entradas.find(function(e){ return e.id === id; });
+    if(!entrada) return;
+    editandoId = id;
+    $("editTema").value = entrada.tema;
+    $("editObs").value = entrada.observacoes || "";
+    $("editData").value = entrada.dataEstudo;
+    renderRevisoesEdit(entrada);
+    openSheet("Editar");
+  }
+
+  function renderRevisoesEdit(entrada){
+    var html = "";
+    entrada.revisoes.forEach(function(rev){
+      html += '<div class="rev-row '+(rev.concluida?'done':'')+'" data-dias="'+rev.dias+'">' +
+        '<div class="chk" data-action="toggle">'+(rev.concluida ? '✓' : '')+'</div>' +
+        '<div class="rinfo"><b>'+rev.dias+' dias</b><span>'+formatDateBR(rev.data)+(rev.concluida && rev.concluidaEm ? ' · concluída em '+formatDateBR(rev.concluidaEm) : '')+'</span></div>' +
+      '</div>';
+    });
+    $("editRevisoes").innerHTML = html;
+  }
+
+  viewHistorico.addEventListener("click", function(ev){
+    var card = ev.target.closest(".hist-item");
+    if(!card) return;
+    abrirEditar(parseInt(card.getAttribute("data-id"), 10));
+  });
+
+  $("editRevisoes").addEventListener("click", function(ev){
+    var chk = ev.target.closest('[data-action="toggle"]');
+    if(!chk || editandoId === null) return;
+    var row = ev.target.closest(".rev-row");
+    var dias = parseInt(row.getAttribute("data-dias"), 10);
+    var entrada = state.entradas.find(function(e){ return e.id === editandoId; });
+    var rev = entrada.revisoes.find(function(r){ return r.dias === dias; });
+    marcarConcluida(editandoId, dias, !rev.concluida);
+    var atualizada = state.entradas.find(function(e){ return e.id === editandoId; });
+    renderRevisoesEdit(atualizada);
+  });
+
+  $("closeEditar").addEventListener("click", function(){ closeSheet("Editar"); editandoId = null; renderAll(); });
+
+  $("saveEditar").addEventListener("click", function(){
+    if(editandoId === null) return;
+    var entrada = state.entradas.find(function(e){ return e.id === editandoId; });
+    if(!entrada) return;
+    var tema = $("editTema").value.trim();
+    if(!tema){ $("editTema").focus(); return; }
+    entrada.tema = tema;
+    entrada.observacoes = $("editObs").value.trim();
+    var novaData = $("editData").value || entrada.dataEstudo;
+    if(novaData !== entrada.dataEstudo){
+      entrada.dataEstudo = novaData;
+      recalcularRevisoes(entrada);
+    }
+    saveState();
+    closeSheet("Editar");
+    editandoId = null;
+    renderAll();
+    showToast("Alterações salvas");
+  });
+
+  $("deleteEntrada").addEventListener("click", function(){
+    if(editandoId === null) return;
+    var entrada = state.entradas.find(function(e){ return e.id === editandoId; });
+    var nome = entrada ? entrada.tema : "este registro";
+    if(!window.confirm('Excluir "'+nome+'"? Isso cancela todas as revisões pendentes dele.')) return;
+    excluirEntrada(editandoId);
+    closeSheet("Editar");
+    editandoId = null;
+    renderAll();
+    showToast("Registro excluído");
+  });
+
+  // ---------- Stats ----------
+  $("btnStats").addEventListener("click", function(){ renderStats(); openSheet("Stats"); });
+  $("closeStats").addEventListener("click", function(){ closeSheet("Stats"); });
+
+  // ---------- Init ----------
+  loadState();
+  renderAll();
+})();
+</script>
+</body>
+</html>
